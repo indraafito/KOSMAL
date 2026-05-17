@@ -40,27 +40,27 @@ export function Register() {
   }
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (password.length < 6) {
-      toast.error("Password minimal 6 karakter");
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName, phone, role },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setVerifyOpen(true);
-  };
+  e.preventDefault();
+  if (password.length < 6) {
+    toast.error("Password minimal 6 karakter");
+    return;
+  }
+  setLoading(true);
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName, phone, role }, 
+    },
+  });
+  setLoading(false);
+  if (error) {
+    toast.error(error.message);
+    return;
+  }
+  toast.success("Akun berhasil dibuat! Silakan masuk.");
+  navigate("/login"); // langsung redirect ke login
+};
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] items-center justify-center bg-gradient-hero px-4 py-12">
