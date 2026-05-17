@@ -50,8 +50,8 @@ export function Register() {
     setLoading(true);
 
     try {
-      // 1. Signup user (tanpa email verification flow)
-      const { error: signUpError } = await supabase.auth.signUp({
+      // 1. Signup
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -63,19 +63,43 @@ export function Register() {
         },
       });
 
+      // DEBUG — lihat detail error di console browser
+      console.log("SignUp response:", { signUpData, signUpError });
+
       if (signUpError) {
+        console.error("SignUp error detail:", signUpError);
+
+        // Pesan error lebih ramah untuk user
+        if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
+          toast.error("Email ini sudah terdaftar. Silakan login.");
+          navigate("/login");
+          return;
+        }
+        if (signUpError.message.includes("rate limit") || signUpError.status === 429) {
+          toast.error("Terlalu banyak percobaan. Coba lagi dalam beberapa menit.");
+          return;
+        }
+        if (signUpError.message.includes("weak password")) {
+          toast.error("Password terlalu lemah. Gunakan kombinasi huruf dan angka.");
+          return;
+        }
+
         toast.error(signUpError.message);
         return;
       }
 
-      // 2. langsung login (karena email verification OFF)
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // 2. Langsung login (karena email confirmation OFF)
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log("SignIn response:", { signInData, signInError });
+
       if (signInError) {
-        toast.error(signInError.message);
+        console.error("SignIn error detail:", signInError);
+        toast.error("Akun dibuat tapi gagal login otomatis. Silakan login manual.");
+        navigate("/login");
         return;
       }
 
@@ -83,7 +107,8 @@ export function Register() {
       navigate("/");
 
     } catch (err: any) {
-      toast.error(err.message || "Terjadi kesalahan");
+      console.error("Unexpected error:", err);
+      toast.error(err.message || "Terjadi kesalahan tak terduga");
     } finally {
       setLoading(false);
     }
@@ -131,7 +156,6 @@ export function Register() {
 
         {/* FORM */}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
-
           <div>
             <Label htmlFor="fullName">Nama Lengkap</Label>
             <Input

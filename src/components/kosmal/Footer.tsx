@@ -11,13 +11,6 @@ export function Footer() {
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
               Marketplace kos terverifikasi di Malang. Cari kos lebih mudah, transparan, dan tanpa drama.
             </p>
-            <div className="mt-5 flex gap-2">
-              {[Instagram, Music2, MessageCircle].map((Icon, i) => (
-                <a key={i} href="#" aria-label="social" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:bg-brand-soft hover:text-primary">
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
           </div>
           <div>
             <h4 className="font-display text-sm font-bold text-foreground">Navigasi</h4>
