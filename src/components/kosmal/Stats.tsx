@@ -1,12 +1,46 @@
+import { useEffect, useState } from "react";
 import { Home, ShieldCheck, Users } from "lucide-react";
-
-const stats = [
-  { icon: Home, value: "500+", label: "Kos Terdaftar" },
-  { icon: ShieldCheck, value: "200+", label: "Kos Terverifikasi" },
-  { icon: Users, value: "2.000+", label: "Penyewa Puas" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export function Stats() {
+  const [statsData, setStatsData] = useState({
+    registered: 0,
+    verified: 0,
+    users: 0,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [
+          { count: registeredCount },
+          { count: verifiedCount },
+          { count: usersCount }
+        ] = await Promise.all([
+          supabase.from("kos").select("*", { count: "exact", head: true }).eq("status", "approved"),
+          supabase.from("kos").select("*", { count: "exact", head: true }).eq("status", "approved").eq("verified", true),
+          supabase.from("profiles").select("*", { count: "exact", head: true })
+        ]);
+
+        setStatsData({
+          registered: registeredCount || 0,
+          verified: verifiedCount || 0,
+          users: usersCount || 0,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  const stats = [
+    { icon: Home, value: statsData.registered.toLocaleString("id-ID"), label: "Kos Terdaftar" },
+    { icon: ShieldCheck, value: statsData.verified.toLocaleString("id-ID"), label: "Kos Terverifikasi" },
+    { icon: Users, value: statsData.users.toLocaleString("id-ID"), label: "Pengguna Terdaftar" },
+  ];
+
   return (
     <section className="mx-auto relative z-10 mt-8 max-w-6xl px-4 sm:px-6 lg:-mt-12 xl:-mt-16 lg:px-8">
       <div className="grid gap-4 rounded-2xl border border-border bg-card p-4 shadow-card sm:grid-cols-3 sm:p-6">
@@ -25,4 +59,3 @@ export function Stats() {
     </section>
   );
 }
-

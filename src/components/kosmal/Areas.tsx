@@ -1,15 +1,58 @@
+import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const areas = [
-  { name: "Lowokwaru", count: 184 },
-  { name: "Klojen", count: 132 },
-  { name: "Blimbing", count: 96 },
-  { name: "Sukun", count: 71 },
-  { name: "Kedungkandang", count: 48 },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export function Areas() {
+  const [areas, setAreas] = useState<{name: string, count: number}[]>([
+    { name: "Lowokwaru", count: 0 },
+    { name: "Klojen", count: 0 },
+    { name: "Blimbing", count: 0 },
+    { name: "Sukun", count: 0 },
+    { name: "Kedungkandang", count: 0 },
+  ]);
+
+  useEffect(() => {
+    async function fetchAreas() {
+      try {
+        const { data, error } = await supabase
+          .from("kos")
+          .select("area")
+          .eq("status", "approved");
+
+        if (error) throw error;
+
+        const defaultAreas = ["Lowokwaru", "Klojen", "Blimbing", "Sukun", "Kedungkandang"];
+        const counts: Record<string, number> = {};
+
+        defaultAreas.forEach((area) => {
+          counts[area] = 0;
+        });
+
+        (data || []).forEach((item) => {
+          if (item.area) {
+            const areaName = item.area.trim();
+            const formattedAreaName = areaName
+              .split(" ")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(" ");
+            counts[formattedAreaName] = (counts[formattedAreaName] || 0) + 1;
+          }
+        });
+
+        const sortedAreas = Object.entries(counts)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count);
+
+        setAreas(sortedAreas);
+      } catch (error) {
+        console.error("Error fetching areas:", error);
+      }
+    }
+
+    fetchAreas();
+  }, []);
+
   return (
     <section className="bg-brand-soft/40 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
