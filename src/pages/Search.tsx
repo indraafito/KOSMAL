@@ -117,7 +117,6 @@ export function Search() {
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {q && <span>Hasil untuk <strong>{q}</strong></span>}
             {area && <span><MapPin className="inline-block h-4 w-4" /> {area}</span>}
-            {!q && !area && <span>Gunakan formulir di beranda untuk penyaringan cepat.</span>}
           </div>
         </div>
 
@@ -240,7 +239,7 @@ export function Search() {
               type="button"
               variant="outline"
               onClick={handleResetFilter}
-              className="flex-1 rounded-full py-5 text-sm font-semibold border-primary/20 text-primary hover:bg-brand-soft/20"
+              className="flex-1 rounded-full py-5 text-sm font-semibold border-primary/20 text-primary hover:bg-brand-soft/20 hover:text-primary"
             >
               Reset
             </Button>
