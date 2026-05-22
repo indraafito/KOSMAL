@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
-import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, syncKosReviewStats, type ReviewWithProfile } from "@/lib/review-queries";
+import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, updateReview, syncKosReviewStats, type ReviewWithProfile } from "@/lib/review-queries";
 import { generateReviewSummary } from "@/lib/ai-summary";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Sparkles, User, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, User, Trash2, MoreVertical, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Props = { kosId: string; onStatsLoaded?: (stats: { count: number; avg: number }) => void };
 
@@ -26,6 +32,30 @@ export function ReviewSection({ kosId, onStatsLoaded }: Props) {
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit state
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(0);
+  const [editText, setEditText] = useState("");
+  const [updating, setUpdating] = useState(false);
+
+  const handleUpdate = async () => {
+    if (!editingReviewId) return;
+    if (editRating === 0) return toast.error("Pilih rating bintang");
+    if (!editText.trim()) return toast.error("Tulis ulasan kamu");
+
+    setUpdating(true);
+    try {
+      await updateReview(editingReviewId, editRating, editText.trim(), kosId);
+      toast.success("Ulasan berhasil diperbarui!");
+      setEditingReviewId(null);
+      await loadData(true);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memperbarui ulasan");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -184,35 +214,99 @@ export function ReviewSection({ kosId, onStatsLoaded }: Props) {
                   <User className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-foreground">
-                      {review.profiles?.full_name || "Pengguna"}
-                    </p>
-                    <StarRating value={review.rating} readonly size="sm" />
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{review.text}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(review.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}
-                    </p>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">
+                          {review.profiles?.full_name || "Pengguna"}
+                        </p>
+                        <StarRating value={review.rating} readonly size="sm" />
+                      </div>
+                    </div>
                     {user && user.id === review.tenant_id && (
-                      <button
-                        onClick={async () => {
-                          if (!confirm("Yakin ingin menghapus ulasan ini?")) return;
-                          try {
-                            await deleteReview(review.id, kosId);
-                            toast.success("Ulasan berhasil dihapus");
-                            await loadData(true);
-                          } catch (err: any) {
-                            toast.error(err.message || "Gagal menghapus ulasan");
-                          }
-                        }}
-                        className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-destructive transition hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-3 w-3" /> Hapus
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors" aria-label="Menu Ulasan">
+                            <MoreVertical className="h-4.5 w-4.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            setEditingReviewId(review.id);
+                            setEditRating(review.rating);
+                            setEditText(review.text.replace(/ \(diedit\)$/, ""));
+                          }}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit Ulasan
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={async () => {
+                              if (!confirm("Yakin ingin menghapus ulasan ini?")) return;
+                              try {
+                                await deleteReview(review.id, kosId);
+                                toast.success("Ulasan berhasil dihapus");
+                                await loadData(true);
+                              } catch (err: any) {
+                                toast.error(err.message || "Gagal menghapus ulasan");
+                              }
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Hapus Ulasan
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
+
+                  {editingReviewId === review.id ? (
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Rating Baru</p>
+                        <StarRating value={editRating} onChange={setEditRating} size="md" />
+                      </div>
+                      <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        placeholder="Edit ulasan kamu..."
+                        rows={3}
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm"
+                          onClick={handleUpdate} 
+                          disabled={updating} 
+                          className="bg-gradient-cta"
+                        >
+                          {updating && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+                          Simpan
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="ghost" 
+                          onClick={() => setEditingReviewId(null)}
+                          disabled={updating}
+                        >
+                          Batal
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {review.text.endsWith(" (diedit)") ? review.text.slice(0, -9) : review.text}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(review.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}
+                        </p>
+                        {review.text.endsWith(" (diedit)") && (
+                          <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground select-none">
+                            diedit
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -262,19 +262,17 @@ export function KosDetail() {
           <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sticky top-24 space-y-6">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">Harga Sewa</p>
-              <div className="mt-2 flex flex-col">
-                <div className="font-display font-extrabold text-primary leading-none">
-                  {kos.price_type === "range" && kos.price_max ? (
-                    <div className="text-2xl sm:text-3xl flex flex-wrap items-baseline gap-1">
-                      <span>{formatRupiah(kos.price)}</span>
-                      <span className="text-base font-medium text-muted-foreground/60 mx-1">s/d</span>
-                      <span>{formatRupiah(Number(kos.price_max))}</span>
-                    </div>
-                  ) : (
-                    <span className="text-3xl sm:text-4xl">{formatRupiah(kos.price)}</span>
-                  )}
-                </div>
-                <span className="text-sm font-semibold text-muted-foreground mt-2">/ {kos.price_period || "bulan"}</span>
+              <div className="mt-2 flex items-baseline gap-1 text-primary whitespace-nowrap overflow-hidden">
+                {kos.price_type === "range" && kos.price_max ? (
+                  <>
+                    <span className="font-display text-sm sm:text-base lg:text-lg font-extrabold tracking-tight">{formatRupiah(kos.price)}</span>
+                    <span className="text-xs font-medium text-muted-foreground/60 mx-0.5">s/d</span>
+                    <span className="font-display text-sm sm:text-base lg:text-lg font-extrabold tracking-tight">{formatRupiah(Number(kos.price_max))}</span>
+                  </>
+                ) : (
+                  <span className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">{formatRupiah(kos.price)}</span>
+                )}
+                <span className="text-xs sm:text-sm font-semibold text-muted-foreground ml-1">/ {kos.price_period || "bulan"}</span>
               </div>
             </div>
 
