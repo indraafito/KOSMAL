@@ -37,31 +37,6 @@ export function Hero() {
             Semua info kos di Malang, langsung di KOSMAL. Foto asli, fasilitas jelas, harga transparan.
           </p>
 
-          <div className="mt-8 rounded-2xl bg-card p-3 shadow-glow">
-            <div className="flex flex-col gap-2 md:flex-row">
-              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border px-3">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  placeholder="Cari lokasi, nama kos, atau fasilitas..."
-                  className="w-full bg-transparent py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="flex items-center gap-2 rounded-xl border border-border px-3 md:w-56">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full bg-transparent py-3 text-sm text-foreground outline-none">
-                  {kecamatans.map((k) => <option key={k}>{k}</option>)}
-                </select>
-              </div>
-              <Button onClick={handleSearch} size="lg" className="rounded-xl bg-gradient-cta px-6 font-semibold shadow-soft hover:opacity-95">
-                Cari Kos <Search className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
           <div className="mt-6 flex flex-wrap gap-2">
             {[
               { icon: ShieldCheck, label: "Data Terverifikasi" },
