@@ -90,3 +90,13 @@ export async function deleteReview(reviewId: string, kosId: string) {
     rating: stats.count > 0 ? stats.avg : 0,
   }).eq("id", kosId);
 }
+
+/** Sync the cached rating/reviews_count on the kos table with actual review data */
+export async function syncKosReviewStats(kosId: string) {
+  const stats = await fetchReviewStats(kosId);
+  await supabase.from("kos").update({
+    reviews_count: stats.count,
+    rating: stats.count > 0 ? stats.avg : 0,
+  }).eq("id", kosId);
+  return stats;
+}

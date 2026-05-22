@@ -15,6 +15,12 @@ const facilityMap: Record<string, { icon: typeof Wifi; label: string }> = {
   kitchen: { icon: ChefHat, label: "Dapur" },
 };
 
+const typeStyles: Record<string, string> = {
+  Putra: "bg-blue-100 text-blue-700",
+  Putri: "bg-pink-100 text-pink-700",
+  Campur: "bg-violet-100 text-violet-700",
+};
+
 const formatRupiah = (n: number) => "Rp" + n.toLocaleString("id-ID");
 
 export function KosCard({ kos }: { kos: KosCardData }) {
@@ -54,7 +60,12 @@ export function KosCard({ kos }: { kos: KosCardData }) {
             <ShieldCheck className="h-3 w-3" /> Terverifikasi
           </span>
         )}
-        <span className="absolute right-3 top-3 rounded-md bg-card/90 px-2 py-1 text-[10px] font-bold text-foreground backdrop-blur">{kos.type}</span>
+        <span
+          className={`absolute right-3 top-3 rounded-md px-2 py-1 text-[10px] font-bold backdrop-blur ${typeStyles[kos.type] || "bg-muted text-foreground"
+            }`}
+        >
+          {kos.type}
+        </span>
         <button onClick={toggle} disabled={busy} aria-label="wishlist" className="absolute bottom-3 right-3 rounded-full bg-card/95 p-2 shadow-soft transition-colors hover:bg-card">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className={`h-4 w-4 ${wished ? "fill-destructive text-destructive" : "text-foreground"}`} />}
         </button>
@@ -70,17 +81,22 @@ export function KosCard({ kos }: { kos: KosCardData }) {
           <MapPin className="h-3 w-3" /> {kos.area}, Malang &bull; {kos.reviews} review
         </div>
 
-        <div className="mt-3 flex flex-col justify-end">
-          <div className="font-display text-primary leading-tight">
-            {kos.price_type === 'range' && kos.price_max ? (
+        <div className="mt-3 flex items-end gap-1">
+          <div className="font-display text-primary leading-none">
+            {kos.price_type === "range" && kos.price_max ? (
               <span className="text-base font-extrabold tracking-tight">
                 {formatRupiah(kos.price)} - {formatRupiah(kos.price_max)}
               </span>
             ) : (
-              <span className="text-lg font-extrabold">{formatRupiah(kos.price)}</span>
+              <span className="text-lg font-extrabold">
+                {formatRupiah(kos.price)}
+              </span>
             )}
           </div>
-          <span className="text-xs text-muted-foreground mt-0.5">/ {kos.price_period}</span>
+
+          <span className="text-xs text-muted-foreground mb-[2px]">
+            / {kos.price_period}
+          </span>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">

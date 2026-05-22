@@ -47,12 +47,20 @@ export function KosDetail() {
   const [loading, setLoading] = useState(true);
   const [wished, setWished] = useState(false);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [liveRating, setLiveRating] = useState(0);
+  const [liveReviewsCount, setLiveReviewsCount] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
     fetchKosBySlug(slug)
-      .then((data) => setKos(data))
+      .then((data) => {
+        setKos(data);
+        if (data) {
+          setLiveRating(data.rating ? Number(data.rating) : 0);
+          setLiveReviewsCount(data.reviews_count || 0);
+        }
+      })
       .finally(() => setLoading(false));
   }, [slug]);
 
@@ -150,7 +158,7 @@ export function KosDetail() {
           <span className="text-muted-foreground/30">•</span>
           <div className="flex items-center gap-1.5 font-medium text-foreground">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-            <span>{kos.rating ? Number(kos.rating).toFixed(1) : "0.0"} ({kos.reviews_count} ulasan)</span>
+            <span>{liveRating ? Number(liveRating).toFixed(1) : "0.0"} ({liveReviewsCount} ulasan)</span>
           </div>
         </div>
       </div>
@@ -238,7 +246,13 @@ export function KosDetail() {
             <hr className="border-border/60" />
 
             {/* Review Section */}
-            <ReviewSection kosId={kos.id} />
+            <ReviewSection 
+              kosId={kos.id} 
+              onStatsLoaded={(st) => {
+                setLiveRating(st.avg);
+                setLiveReviewsCount(st.count);
+              }}
+            />
           </div>
         </div>
 

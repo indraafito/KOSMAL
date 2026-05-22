@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, type ReviewWithProfile } from "@/lib/review-queries";
+import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, syncKosReviewStats, type ReviewWithProfile } from "@/lib/review-queries";
 import { generateReviewSummary } from "@/lib/ai-summary";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,9 @@ import { toast } from "sonner";
 import { Loader2, Sparkles, User, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-type Props = { kosId: string };
+type Props = { kosId: string; onStatsLoaded?: (stats: { count: number; avg: number }) => void };
 
-export function ReviewSection({ kosId }: Props) {
+export function ReviewSection({ kosId, onStatsLoaded }: Props) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
   const [stats, setStats] = useState({ count: 0, avg: 0 });
@@ -34,6 +34,10 @@ export function ReviewSection({ kosId }: Props) {
       ]);
       setReviews(revs);
       setStats(st);
+
+      // Sync cached kos table with real review data
+      syncKosReviewStats(kosId).catch(() => {});
+      onStatsLoaded?.(st);
 
       if (user) {
         const reviewed = await hasUserReviewed(kosId, user.id);
