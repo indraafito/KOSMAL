@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchKosList, kosRowToCard } from "@/lib/kos-queries";
 import { KosCard } from "@/components/kosmal/KosCard";
 import { toMonthlyPrice, type PricePeriod } from "@/lib/price-utils";
-import { Search as SearchIcon, MapPin, Loader2, SlidersHorizontal, X } from "lucide-react";
+import { Search as SearchIcon, MapPin, Loader2, SlidersHorizontal, X, Wifi, Snowflake, Bath, Car, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,14 @@ const KECAMATAN = [
   "Lowokwaru", "Blimbing", "Klojen", "Sukun", "Kedungkandang",
 ];
 
+const FACILITIES_LIST = [
+  { id: "wifi", label: "WiFi", icon: Wifi },
+  { id: "ac", label: "AC", icon: Snowflake },
+  { id: "bath", label: "KM Dalam", icon: Bath },
+  { id: "parking", label: "Parkir", icon: Car },
+  { id: "kitchen", label: "Dapur", icon: ChefHat },
+];
+
 export function Search() {
   const [searchParams] = useSearchParams();
   const q = searchParams.get("q") ?? undefined;
@@ -29,6 +37,7 @@ export function Search() {
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [pricePeriod, setPricePeriod] = useState<PricePeriod>("bulan");
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
   // Dialog temp states
@@ -37,6 +46,7 @@ export function Search() {
   const [tempMin, setTempMin] = useState<string>("");
   const [tempMax, setTempMax] = useState<string>("");
   const [tempPeriod, setTempPeriod] = useState<PricePeriod>("bulan");
+  const [tempFacilities, setTempFacilities] = useState<string[]>([]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["kos", "search", q, area, sort],
@@ -62,9 +72,14 @@ export function Search() {
         if (hargaBulan > maxPerBulan) return false;
       }
 
+      // Filter fasilitas
+      if (selectedFacilities.length > 0 && !selectedFacilities.every((f) => kos.facilities.includes(f))) {
+        return false;
+      }
+
       return true;
     });
-  }, [data, selectedKecamatan, minPrice, maxPrice, pricePeriod, isFiltered]);
+  }, [data, selectedKecamatan, minPrice, maxPrice, pricePeriod, isFiltered, selectedFacilities]);
 
   const heading = area ? `Kos di ${area}` : "Semua Kos";
 
@@ -73,6 +88,7 @@ export function Search() {
     setTempMin(minPrice);
     setTempMax(maxPrice);
     setTempPeriod(pricePeriod);
+    setTempFacilities(selectedFacilities);
     setOpenFilterDialog(true);
   };
 
@@ -81,7 +97,8 @@ export function Search() {
     setMinPrice(tempMin);
     setMaxPrice(tempMax);
     setPricePeriod(tempPeriod);
-    setIsFiltered(!!tempMin || !!tempMax || !!tempKecamatan);
+    setSelectedFacilities(tempFacilities);
+    setIsFiltered(!!tempMin || !!tempMax);
     setOpenFilterDialog(false);
   };
 
@@ -90,18 +107,21 @@ export function Search() {
     setMinPrice("");
     setMaxPrice("");
     setPricePeriod("bulan");
+    setSelectedFacilities([]);
     setIsFiltered(false);
 
     setTempKecamatan("");
     setTempMin("");
     setTempMax("");
     setTempPeriod("bulan");
+    setTempFacilities([]);
     setOpenFilterDialog(false);
   };
 
   const activeFilterCount = [
     selectedKecamatan !== "",
     isFiltered,
+    selectedFacilities.length > 0,
   ].filter(Boolean).length;
 
   return (
@@ -230,6 +250,40 @@ export function Search() {
                     placeholder="Semua"
                   />
                 </div>
+              </div>
+            </div>
+
+            <hr className="border-border/60" />
+
+            {/* Filter fasilitas */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-3">Fasilitas</p>
+              <div className="grid grid-cols-2 gap-2">
+                {FACILITIES_LIST.map((f) => {
+                  const Icon = f.icon;
+                  const isSelected = tempFacilities.includes(f.id);
+                  return (
+                    <button
+                      type="button"
+                      key={f.id}
+                      onClick={() =>
+                        setTempFacilities((prev) =>
+                          prev.includes(f.id)
+                            ? prev.filter((x) => x !== f.id)
+                            : [...prev, f.id]
+                        )
+                      }
+                      className={`flex items-center gap-2 rounded-2xl border p-3 text-left transition-all ${
+                        isSelected
+                          ? "border-primary bg-brand-soft/20 text-primary shadow-sm"
+                          : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="text-xs font-semibold">{f.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
