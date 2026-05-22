@@ -10,6 +10,7 @@ import { buildWhatsAppUrl, buildKosContactMessage, buildKosBookingMessage } from
 import { ReviewSection } from "@/components/kosmal/ReviewSection";
 import {
   ChevronRight,
+  ChevronLeft,
   MapPin,
   ShieldCheck,
   Loader2,
@@ -176,14 +177,37 @@ export function KosDetail() {
               alt={kos.name} 
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]" 
             />
+            
             {photos.length > 1 && (
-              <div className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md flex items-center gap-1 shadow-soft">
+              <>
+                {/* Left Navigation Button */}
+                <button
+                  onClick={() => setActivePhoto((prev) => (prev === 0 ? photos.length - 1 : prev - 1))}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 hover:bg-black/60 text-white backdrop-blur-sm transition shadow-soft z-10"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                {/* Right Navigation Button */}
+                <button
+                  onClick={() => setActivePhoto((prev) => (prev === photos.length - 1 ? 0 : prev + 1))}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 hover:bg-black/60 text-white backdrop-blur-sm transition shadow-soft z-10"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </>
+            )}
+
+            {photos.length > 1 && (
+              <div className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md flex items-center gap-1 shadow-soft z-10">
                 <ImageIcon className="h-3.5 w-3.5" /> {activePhoto + 1} / {photos.length}
               </div>
             )}
             {/* Photo navigation inside the gallery */}
             {photos.length > 1 && (
-              <div className="absolute bottom-4 left-4 flex gap-1.5">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                 {photos.map((_: any, idx: number) => (
                   <button
                     key={idx}
