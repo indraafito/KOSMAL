@@ -8,14 +8,31 @@ export type ReviewWithProfile = ReviewRow & {
 };
 
 export async function fetchKosReviews(kosId: string): Promise<ReviewWithProfile[]> {
-  const { data, error } = await supabase
+  // Fetch reviews without relational join (no FK from tenant_id to profiles)
+  const { data: reviews, error } = await supabase
     .from("reviews")
-    .select("*, profiles:tenant_id(full_name, avatar_url)")
+    .select("*")
     .eq("kos_id", kosId)
     .eq("status", "visible")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data as any) ?? [];
+  if (!reviews || reviews.length === 0) return [];
+
+  // Fetch profiles separately for all unique tenant_ids
+  const tenantIds = [...new Set(reviews.map((r) => r.tenant_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", tenantIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [p.id, { full_name: p.full_name, avatar_url: p.avatar_url }])
+  );
+
+  return reviews.map((r) => ({
+    ...r,
+    profiles: profileMap.get(r.tenant_id) ?? null,
+  }));
 }
 
 export async function fetchReviewStats(kosId: string) {
