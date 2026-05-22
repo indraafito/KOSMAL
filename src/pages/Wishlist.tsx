@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchWishlist, removeWishlist } from "@/lib/app-queries";
@@ -82,7 +82,7 @@ export function Wishlist() {
                   <Link to={`/kos/${item.kos.slug}`} className="text-xl font-semibold text-foreground hover:text-primary">{item.kos.name}</Link>
                   <p className="mt-2 text-sm text-muted-foreground">{item.kos.area}</p>
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>{formatRupiah(item.kos.price)} / bulan</span>
+                    <span>{formatRupiah(item.kos.price)} / {item.kos.price_period || "bulan"}</span>
                     <span className="rounded-full bg-muted px-2 py-1">{item.kos.type}</span>
                   </div>
                 </div>

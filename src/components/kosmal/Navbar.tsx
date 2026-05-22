@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { KosmalLogo } from "./Logo";
 import { Button } from "@/components/ui/button";
-import { Menu, User as UserIcon, LogOut, LayoutDashboard, Heart, MessageCircle, Building2 } from "lucide-react";
+import { Menu, User as UserIcon, LogOut, LayoutDashboard, Heart, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -19,9 +19,7 @@ export function Navbar() {
   const links = [
     { to: "/", label: "Beranda" },
     { to: "/cari", label: "Cari Kos" },
-    ...(!user ? [{ to: "/register?role=owner", label: "Untuk Pemilik" }] : []),
   ];
-  const dashboardTo = hasRole("admin") ? "/admin/dashboard" : hasRole("owner") ? "/owner/dashboard" : "/dashboard";
   const initial = (profile?.full_name || user?.email || "U").charAt(0).toUpperCase();
 
   return (
@@ -56,58 +54,35 @@ export function Navbar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs">
-                  Login sebagai <span className="font-bold uppercase text-primary">{roles[0] ?? "tenant"}</span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={dashboardTo}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                {hasRole("tenant") && (
+
+                {hasRole("user") && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/wishlist">
+                      <Heart className="mr-2 h-4 w-4" />Wishlist
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {hasRole("admin") && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link to="/wishlist">
-                        <Heart className="mr-2 h-4 w-4" />Wishlist
+                      <Link to="/admin/dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />Dashboard Admin
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/booking">
-                        <Building2 className="mr-2 h-4 w-4" />Booking Saya
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/chat">
-                        <MessageCircle className="mr-2 h-4 w-4" />Chat
+                      <Link to="/admin/kos">
+                        <ShieldCheck className="mr-2 h-4 w-4" />Kelola Kos
                       </Link>
                     </DropdownMenuItem>
                   </>
                 )}
-                {hasRole("owner") && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to="/owner/kos">
-                        <Building2 className="mr-2 h-4 w-4" />Kelola Kos
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/owner/booking">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />Booking Masuk
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/owner/chat">
-                        <MessageCircle className="mr-2 h-4 w-4" />Chat
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
+                {!hasRole("admin") && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">
+                      <UserIcon className="mr-2 h-4 w-4" />Profil
+                    </Link>
+                  </DropdownMenuItem>
                 )}
-                <DropdownMenuItem asChild>
-                  <Link to="/profile">
-                    <UserIcon className="mr-2 h-4 w-4" />Profil
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />Keluar
@@ -124,24 +99,34 @@ export function Navbar() {
         <div className="border-t border-border bg-card md:hidden">
           <div className="flex flex-col gap-1 p-4">
             {links.map((l) => (
-              <Link key={l.label} to={l.to} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
+              <Link key={l.label} to={l.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
                 {l.label}
               </Link>
             ))}
             {!user ? (
               <div className="mt-2 flex gap-2">
-                <Link to="/login" className="flex-1">
+                <Link to="/login" className="flex-1" onClick={() => setOpen(false)}>
                   <Button variant="outline" size="sm" className="w-full">Masuk</Button>
                 </Link>
-                <Link to="/register" className="flex-1">
+                <Link to="/register" className="flex-1" onClick={() => setOpen(false)}>
                   <Button size="sm" className="w-full bg-gradient-cta">Daftar</Button>
                 </Link>
               </div>
             ) : (
               <>
-                <Link to={dashboardTo} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Dashboard</Link>
-                <Link to="/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Profil</Link>
-                <button onClick={() => signOut()} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-muted">Keluar</button>
+                {hasRole("user") && (
+                  <Link to="/wishlist" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Wishlist</Link>
+                )}
+                {hasRole("admin") && (
+                  <>
+                    <Link to="/admin/dashboard" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Dashboard Admin</Link>
+                    <Link to="/admin/kos" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Kelola Kos</Link>
+                  </>
+                )}
+                {!hasRole("admin") && (
+                  <Link to="/profile" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">Profil</Link>
+                )}
+                <button onClick={() => { signOut(); setOpen(false); }} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-muted">Keluar</button>
               </>
             )}
           </div>
@@ -150,5 +135,3 @@ export function Navbar() {
     </header>
   );
 }
-
-

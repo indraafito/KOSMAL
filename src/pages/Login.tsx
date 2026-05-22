@@ -65,11 +65,11 @@ export function Login() {
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" placeholder="kamu@email.com" />
+            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" placeholder="masukkan email kamu" />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <PasswordInput id="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" placeholder="��������" />
+            <PasswordInput id="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" placeholder="masukkan password kamu" />
           </div>
           <Button type="submit" disabled={loading} className="w-full bg-gradient-cta font-semibold">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Masuk

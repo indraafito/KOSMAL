@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -7,17 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KosmalLogo } from "@/components/kosmal/Logo";
 import { toast } from "sonner";
-import { Loader2, User, Building2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/components/kosmal/PasswordInput";
 
 export function Register() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [searchParams] = useSearchParams();
-
-  const [role, setRole] = useState<"tenant" | "owner">(() => {
-    return searchParams.get("role") === "owner" ? "owner" : "tenant";
-  });
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,7 +45,6 @@ export function Register() {
     setLoading(true);
 
     try {
-      // 1. Signup
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -58,18 +52,12 @@ export function Register() {
           data: {
             full_name: fullName,
             phone,
-            role,
+            role: "user",
           },
         },
       });
 
-      // DEBUG — lihat detail error di console browser
-      console.log("SignUp response:", { signUpData, signUpError });
-
       if (signUpError) {
-        console.error("SignUp error detail:", signUpError);
-
-        // Pesan error lebih ramah untuk user
         if (signUpError.message.includes("already registered") || signUpError.message.includes("already been registered")) {
           toast.error("Email ini sudah terdaftar. Silakan login.");
           navigate("/login");
@@ -83,21 +71,17 @@ export function Register() {
           toast.error("Password terlalu lemah. Gunakan kombinasi huruf dan angka.");
           return;
         }
-
         toast.error(signUpError.message);
         return;
       }
 
-      // 2. Langsung login (karena email confirmation OFF)
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Auto-login after register
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("SignIn response:", { signInData, signInError });
-
       if (signInError) {
-        console.error("SignIn error detail:", signInError);
         toast.error("Akun dibuat tapi gagal login otomatis. Silakan login manual.");
         navigate("/login");
         return;
@@ -105,9 +89,7 @@ export function Register() {
 
       toast.success("Akun berhasil dibuat & login!");
       navigate("/");
-
     } catch (err: any) {
-      console.error("Unexpected error:", err);
       toast.error(err.message || "Terjadi kesalahan tak terduga");
     } finally {
       setLoading(false);
@@ -117,15 +99,12 @@ export function Register() {
   return (
     <div className="flex min-h-[calc(100vh-7rem)] items-center justify-center bg-gradient-hero px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-glow">
-
-        {/* LOGO */}
         <div className="mb-6 flex justify-center">
           <Link to="/">
             <KosmalLogo />
           </Link>
         </div>
 
-        {/* TITLE */}
         <h1 className="text-center font-display text-2xl font-extrabold text-foreground">
           Daftar KOSMAL
         </h1>
@@ -133,28 +112,6 @@ export function Register() {
           Gratis tanpa drama, mulai cari kos sekarang.
         </p>
 
-        {/* ROLE SWITCH */}
-        <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-border bg-muted/50 p-1">
-          {[
-            { value: "tenant", icon: User, label: "Pencari Kos" },
-            { value: "owner", icon: Building2, label: "Pemilik Kos" },
-          ].map(({ value, icon: Icon, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setRole(value as "tenant" | "owner")}
-              className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                role === value
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-4 w-4" /> {label}
-            </button>
-          ))}
-        </div>
-
-        {/* FORM */}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
             <Label htmlFor="fullName">Nama Lengkap</Label>
@@ -216,14 +173,12 @@ export function Register() {
           </Button>
         </form>
 
-        {/* LOGIN LINK */}
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Sudah punya akun?{" "}
           <Link to="/login" className="font-semibold text-primary hover:underline">
             Masuk sekarang
           </Link>
         </p>
-
       </div>
     </div>
   );

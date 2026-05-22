@@ -1,15 +1,15 @@
-﻿import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { KosRow } from "@/lib/kos-queries";
+
+// ========================
+// Wishlist
+// ========================
 
 export type WishlistItem = {
   id: string;
   kos: KosRow;
 };
-
-export type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
-export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
-export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 
 export async function fetchWishlist(tenantId: string): Promise<WishlistItem[]> {
   const { data, error } = await supabase.from("wishlist").select("id, kos(*)").eq("tenant_id", tenantId);
@@ -22,82 +22,9 @@ export async function removeWishlist(tenantId: string, kosId: string) {
   if (error) throw error;
 }
 
-export async function fetchTenantBookings(tenantId: string): Promise<(BookingRow & { kos?: { name?: string; area?: string; image?: string } })[]> {
-  const { data, error } = await supabase.from("bookings").select("*, kos(name, area, image)").eq("tenant_id", tenantId).order("created_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function createBooking(payload: {
-  tenant_id: string;
-  owner_id: string;
-  kos_id: string;
-  check_in: string;
-  duration_months: number;
-  notes?: string | null;
-  total_price: number;
-}) {
-  const { error } = await supabase.from("bookings").insert({
-    ...payload,
-    status: "pending",
-  });
-  if (error) throw error;
-}
-
-export async function fetchOwnerBookings(ownerId: string): Promise<(BookingRow & { kos?: { name?: string; area?: string; image?: string } })[]> {
-  const { data, error } = await supabase.from("bookings").select("*, kos(name, area, image)").eq("owner_id", ownerId).order("created_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function updateBookingStatus(bookingId: string, status: Database["public"]["Enums"]["booking_status"]) {
-  const { error } = await supabase.from("bookings").update({ status }).eq("id", bookingId);
-  if (error) throw error;
-}
-
-export async function findOrCreateConversation(tenantId: string, ownerId: string, kosId: string) {
-  const { data: existing, error: findError } = await supabase
-    .from("conversations")
-    .select("*")
-    .match({ tenant_id: tenantId, owner_id: ownerId, kos_id: kosId })
-    .maybeSingle();
-  if (findError) throw findError;
-  if (existing) return existing as ConversationRow;
-
-  const { data: created, error: insertError } = await supabase
-    .from("conversations")
-    .insert({ tenant_id: tenantId, owner_id: ownerId, kos_id: kosId, last_message_at: new Date().toISOString() })
-    .select("*")
-    .maybeSingle();
-  if (insertError) throw insertError;
-  return created as ConversationRow;
-}
-
-export async function fetchConversations(mode: "tenant" | "owner", userId: string) {
-  const query = mode === "tenant"
-    ? supabase.from("conversations").select("*, kos(name, area, image)").eq("tenant_id", userId)
-    : supabase.from("conversations").select("*, kos(name, area, image)").eq("owner_id", userId);
-  const { data, error } = await query.order("last_message_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function fetchMessages(conversationId: string): Promise<MessageRow[]> {
-  const { data, error } = await supabase.from("messages").select("*").eq("conversation_id", conversationId).order("created_at", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function sendMessage(conversationId: string, senderId: string, content: string) {
-  const timestamp = new Date().toISOString();
-  const [{ error: messageError }, { error: conversationError }] = await Promise.all([
-    supabase.from("messages").insert({ conversation_id: conversationId, sender_id: senderId, content, created_at: timestamp }),
-    supabase.from("conversations").update({ last_message_at: timestamp }).eq("id", conversationId),
-  ]);
-
-  if (messageError) throw messageError;
-  if (conversationError) throw conversationError;
-}
+// ========================
+// Admin: Kos CRUD
+// ========================
 
 export async function createKosListing(options: {
   owner_id: string;
@@ -105,18 +32,21 @@ export async function createKosListing(options: {
   area: string;
   address: string;
   price: number;
+  price_period: string;
+  price_type: string;
+  price_max?: number | null;
   type: string;
   description: string;
   facilities: string[];
+  owner_name: string;
+  owner_whatsapp: string;
+  photos?: string[];
 }) {
   const helpers = (value: string) =>
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-      .slice(0, 64);
+    value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 64);
 
   const slug = `${helpers(options.name) || "kos"}-${Math.random().toString(36).slice(2, 7)}`;
+
   const { data, error } = await supabase
     .from("kos")
     .insert({
@@ -125,26 +55,104 @@ export async function createKosListing(options: {
       area: options.area,
       address: options.address,
       price: options.price,
+      price_period: options.price_period,
+      price_type: options.price_type,
+      price_max: options.price_max ?? null,
       type: options.type as any,
       description: options.description,
       facilities: options.facilities,
       all_facilities: options.facilities,
-      gallery: [],
+      gallery: options.photos || [],
+      photos: options.photos || [],
+      image: options.photos?.[0] || null,
       rules: [],
       slug,
-      status: "pending",
-      verified: false,
+      status: "approved",
+      verified: true,
       available: 1,
       rating: 0,
       reviews_count: 0,
+      owner_name: options.owner_name,
+      owner_whatsapp: options.owner_whatsapp,
     })
     .select("*")
     .maybeSingle();
+
   if (error) throw error;
   return data as KosRow;
+}
+
+export async function updateKosListing(kosId: string, updates: Partial<Database["public"]["Tables"]["kos"]["Update"]>) {
+  const { error } = await supabase.from("kos").update(updates).eq("id", kosId);
+  if (error) throw error;
+}
+
+export async function updateKosPhotos(kosId: string, photos: string[]) {
+  const { error } = await supabase
+    .from("kos")
+    .update({ photos, gallery: photos, image: photos[0] || null })
+    .eq("id", kosId);
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteKosListing(kosId: string) {
   const { error } = await supabase.from("kos").delete().eq("id", kosId);
   if (error) throw error;
+}
+
+// ========================
+// Admin: User Management
+// ========================
+
+export async function fetchAllUsers() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*, user_roles(role)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// ========================
+// Admin: Review Management
+// ========================
+
+export async function fetchAllReviews() {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, profiles:tenant_id(full_name, avatar_url), kos:kos_id(name, slug)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function updateReviewStatus(reviewId: string, status: Database["public"]["Enums"]["review_status"]) {
+  const { error } = await supabase.from("reviews").update({ status }).eq("id", reviewId);
+  if (error) throw error;
+}
+
+export async function deleteReview(reviewId: string) {
+  const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+  if (error) throw error;
+}
+
+// ========================
+// Admin: Statistics
+// ========================
+
+export async function fetchStats() {
+  const [kosResult, userResult, reviewResult] = await Promise.all([
+    supabase.from("kos").select("id, area, status", { count: "exact" }),
+    supabase.from("profiles").select("id", { count: "exact" }),
+    supabase.from("reviews").select("id", { count: "exact" }),
+  ]);
+  return {
+    totalKos: kosResult.count ?? 0,
+    totalUsers: userResult.count ?? 0,
+    totalReviews: reviewResult.count ?? 0,
+    kosByArea: (kosResult.data ?? []).reduce((acc: Record<string, number>, k: any) => {
+      acc[k.area] = (acc[k.area] || 0) + 1;
+      return acc;
+    }, {}),
+  };
 }

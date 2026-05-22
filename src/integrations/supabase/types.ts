@@ -7,101 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      bookings: {
-        Row: {
-          check_in: string
-          created_at: string
-          duration_months: number
-          id: string
-          kos_id: string
-          notes: string | null
-          owner_id: string
-          payment_proof_url: string | null
-          status: Database["public"]["Enums"]["booking_status"]
-          tenant_id: string
-          total_price: number
-          updated_at: string
-        }
-        Insert: {
-          check_in: string
-          created_at?: string
-          duration_months?: number
-          id?: string
-          kos_id: string
-          notes?: string | null
-          owner_id: string
-          payment_proof_url?: string | null
-          status?: Database["public"]["Enums"]["booking_status"]
-          tenant_id: string
-          total_price: number
-          updated_at?: string
-        }
-        Update: {
-          check_in?: string
-          created_at?: string
-          duration_months?: number
-          id?: string
-          kos_id?: string
-          notes?: string | null
-          owner_id?: string
-          payment_proof_url?: string | null
-          status?: Database["public"]["Enums"]["booking_status"]
-          tenant_id?: string
-          total_price?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bookings_kos_id_fkey"
-            columns: ["kos_id"]
-            isOneToOne: false
-            referencedRelation: "kos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string
-          id: string
-          kos_id: string | null
-          last_message_at: string
-          owner_id: string
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kos_id?: string | null
-          last_message_at?: string
-          owner_id: string
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kos_id?: string | null
-          last_message_at?: string
-          owner_id?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_kos_id_fkey"
-            columns: ["kos_id"]
-            isOneToOne: false
-            referencedRelation: "kos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       kos: {
         Row: {
           address: string
@@ -117,7 +27,13 @@ export type Database = {
           name: string
           nearby: Json
           owner_id: string
+          owner_name: string
+          owner_whatsapp: string
           price: number
+          price_period: string
+          price_type: string
+          price_max: number | null
+          photos: string[]
           rating: number
           reviews_count: number
           rules: string[]
@@ -126,6 +42,8 @@ export type Database = {
           type: Database["public"]["Enums"]["kos_type"]
           updated_at: string
           verified: boolean
+          ai_review_summary: string | null
+          ai_summary_review_count: number
         }
         Insert: {
           address: string
@@ -141,7 +59,13 @@ export type Database = {
           name: string
           nearby?: Json
           owner_id: string
+          owner_name: string
+          owner_whatsapp: string
           price: number
+          price_period?: string
+          price_type?: string
+          price_max?: number | null
+          photos?: string[]
           rating?: number
           reviews_count?: number
           rules?: string[]
@@ -150,6 +74,8 @@ export type Database = {
           type?: Database["public"]["Enums"]["kos_type"]
           updated_at?: string
           verified?: boolean
+          ai_review_summary?: string | null
+          ai_summary_review_count?: number
         }
         Update: {
           address?: string
@@ -165,7 +91,13 @@ export type Database = {
           name?: string
           nearby?: Json
           owner_id?: string
+          owner_name?: string
+          owner_whatsapp?: string
           price?: number
+          price_period?: string
+          price_type?: string
+          price_max?: number | null
+          photos?: string[]
           rating?: number
           reviews_count?: number
           rules?: string[]
@@ -174,40 +106,10 @@ export type Database = {
           type?: Database["public"]["Enums"]["kos_type"]
           updated_at?: string
           verified?: boolean
+          ai_review_summary?: string | null
+          ai_summary_review_count?: number
         }
         Relationships: []
-      }
-      messages: {
-        Row: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          sender_id: string
-        }
-        Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          sender_id: string
-        }
-        Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
@@ -301,13 +203,6 @@ export type Database = {
           text?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "reviews_kos_id_fkey"
             columns: ["kos_id"]
@@ -410,14 +305,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "tenant" | "owner" | "admin"
-      booking_status:
-        | "pending"
-        | "awaiting_payment"
-        | "awaiting_verification"
-        | "confirmed"
-        | "rejected"
-        | "cancelled"
+      app_role: "user" | "admin"
       kos_status: "pending" | "approved" | "rejected"
       kos_type: "Putra" | "Putri" | "Campur"
       report_status: "open" | "reviewing" | "resolved" | "dismissed"
@@ -550,15 +438,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["tenant", "owner", "admin"],
-      booking_status: [
-        "pending",
-        "awaiting_payment",
-        "awaiting_verification",
-        "confirmed",
-        "rejected",
-        "cancelled",
-      ],
+      app_role: ["user", "admin"],
       kos_status: ["pending", "approved", "rejected"],
       kos_type: ["Putra", "Putri", "Campur"],
       report_status: ["open", "reviewing", "resolved", "dismissed"],

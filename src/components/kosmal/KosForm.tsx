@@ -14,9 +14,10 @@ const TIPE = ["Putra","Putri","Campur"] as const;
 
 export type KosFormValues = {
   name: string; area: string; address: string; type: typeof TIPE[number];
-  description: string; price: number; available: number;
+  description: string; price: number; price_period: string; price_type: string; price_max: number | null; available: number;
   facilities: string[]; all_facilities: string[]; rules: string[];
   image: string | null; gallery: string[];
+  owner_name: string; owner_whatsapp: string;
 };
 
 type KosFormInitial = Partial<Omit<KosFormValues, "image">> & { image?: string | null };
@@ -26,9 +27,12 @@ export function KosForm({ initial, onSubmit }: { initial?: KosFormInitial; onSub
   const [v, setV] = useState<KosFormValues>({
     name: initial?.name ?? "", area: initial?.area ?? KECAMATAN[0], address: initial?.address ?? "",
     type: (initial?.type as KosFormValues["type"]) ?? "Putra",
-    description: initial?.description ?? "", price: initial?.price ?? 1000000, available: initial?.available ?? 1,
+    description: initial?.description ?? "", price: initial?.price ?? 1000000, 
+    price_period: initial?.price_period ?? "bulan", price_type: initial?.price_type ?? "fixed", price_max: initial?.price_max ?? null,
+    available: initial?.available ?? 1,
     facilities: initial?.facilities ?? [], all_facilities: initial?.all_facilities ?? [],
     rules: initial?.rules ?? [], image: initial?.image ?? "", gallery: initial?.gallery ?? [],
+    owner_name: initial?.owner_name ?? "", owner_whatsapp: initial?.owner_whatsapp ?? "",
   });
   const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false);
 
@@ -66,8 +70,33 @@ export function KosForm({ initial, onSubmit }: { initial?: KosFormInitial; onSub
       <div><Label>Alamat lengkap</Label><Input required value={v.address} onChange={(e) => setV({ ...v, address: e.target.value })} className="mt-1" /></div>
       <div><Label>Deskripsi</Label><Textarea required value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} className="mt-1" /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>Harga / bulan (Rp)</Label><Input type="number" required value={v.price} onChange={(e) => setV({ ...v, price: Number(e.target.value) })} className="mt-1" /></div>
+        <div><Label>Harga Utama (Rp)</Label><Input type="number" required value={v.price} onChange={(e) => setV({ ...v, price: Number(e.target.value) })} className="mt-1" /></div>
+        <div><Label>Periode Harga</Label>
+          <select value={v.price_period} onChange={(e) => setV({ ...v, price_period: e.target.value })} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+            <option value="bulan">Per Bulan</option>
+            <option value="tahun">Per Tahun</option>
+            <option value="hari">Per Hari</option>
+            <option value="semester">Per Semester</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><Label>Tipe Harga</Label>
+          <select value={v.price_type} onChange={(e) => setV({ ...v, price_type: e.target.value })} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+            <option value="fixed">Fixed</option>
+            <option value="range">Range</option>
+          </select>
+        </div>
+        {v.price_type === "range" && (
+          <div><Label>Harga Maksimal (Rp)</Label><Input type="number" value={v.price_max ?? ""} onChange={(e) => setV({ ...v, price_max: e.target.value ? Number(e.target.value) : null })} className="mt-1" /></div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <div><Label>Kamar tersedia</Label><Input type="number" required value={v.available} onChange={(e) => setV({ ...v, available: Number(e.target.value) })} className="mt-1" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
+        <div><Label>Nama Pemilik</Label><Input required value={v.owner_name} onChange={(e) => setV({ ...v, owner_name: e.target.value })} className="mt-1" placeholder="Nama Bpk/Ibu Kos" /></div>
+        <div><Label>No WhatsApp Pemilik</Label><Input required type="tel" value={v.owner_whatsapp} onChange={(e) => setV({ ...v, owner_whatsapp: e.target.value })} className="mt-1" placeholder="08123456789" /></div>
       </div>
       <div>
         <Label>Fasilitas (untuk filter)</Label>

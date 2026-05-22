@@ -5,20 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export type Kos = {
-  id: string;
-  slug?: string;
-  name: string;
-  area: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  type: "Putra" | "Putri" | "Campur";
-  image: string;
-  verified?: boolean;
-  facilities: string[];
-};
+import type { KosCardData } from "@/lib/kos-queries";
 
 const facilityMap: Record<string, { icon: typeof Wifi; label: string }> = {
   wifi: { icon: Wifi, label: "WiFi" },
@@ -30,7 +17,7 @@ const facilityMap: Record<string, { icon: typeof Wifi; label: string }> = {
 
 const formatRupiah = (n: number) => "Rp" + n.toLocaleString("id-ID");
 
-export function KosCard({ kos }: { kos: Kos }) {
+export function KosCard({ kos }: { kos: KosCardData }) {
   const { user, hasRole } = useAuth();
   const [wished, setWished] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -44,7 +31,7 @@ export function KosCard({ kos }: { kos: Kos }) {
     e.preventDefault();
     e.stopPropagation();
     if (!user) return toast.error("Masuk dulu untuk menyimpan");
-    if (!hasRole("tenant")) return toast.error("Hanya pencari kos bisa wishlist");
+    if (!hasRole("user")) return toast.error("Hanya pengguna biasa yang bisa wishlist");
     setBusy(true);
     if (wished) {
       await supabase.from("wishlist").delete().eq("tenant_id", user.id).eq("kos_id", kos.id);
@@ -80,12 +67,20 @@ export function KosCard({ kos }: { kos: Kos }) {
           </div>
         </div>
         <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3" /> {kos.area}, Malang · {kos.reviews} review
+          <MapPin className="h-3 w-3" /> {kos.area}, Malang &bull; {kos.reviews} review
         </div>
 
-        <div className="mt-3 flex items-baseline gap-1">
-          <span className="font-display text-lg font-extrabold text-primary">{formatRupiah(kos.price)}</span>
-          <span className="text-xs text-muted-foreground">/ bulan</span>
+        <div className="mt-3 flex flex-col justify-end">
+          <div className="font-display text-primary leading-tight">
+            {kos.price_type === 'range' && kos.price_max ? (
+              <span className="text-base font-extrabold tracking-tight">
+                {formatRupiah(kos.price)} - {formatRupiah(kos.price_max)}
+              </span>
+            ) : (
+              <span className="text-lg font-extrabold">{formatRupiah(kos.price)}</span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground mt-0.5">/ {kos.price_period}</span>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">

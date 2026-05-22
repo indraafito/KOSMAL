@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export type KosRow = Database["public"]["Tables"]["kos"]["Row"];
-export type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
 
 export type KosFilters = {
   q?: string;
@@ -36,8 +35,8 @@ export async function fetchKosBySlug(slug: string): Promise<KosRow | null> {
   return data;
 }
 
-export async function fetchOwnerKos(ownerId: string) {
-  const { data, error } = await supabase.from("kos").select("*").eq("owner_id", ownerId).order("created_at", { ascending: false });
+export async function fetchAllKos(): Promise<KosRow[]> {
+  const { data, error } = await supabase.from("kos").select("*").order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
@@ -48,14 +47,21 @@ export const facilityLabels: Record<string, string> = {
 
 export type KosCardData = {
   id: string; slug: string; name: string; area: string; price: number;
+  price_period: string; price_type: string; price_max: number | null;
   rating: number; reviews: number; type: "Putra" | "Putri" | "Campur";
   image: string; verified: boolean; facilities: string[];
+  owner_name: string; owner_whatsapp: string;
 };
 
 export const kosRowToCard = (k: KosRow): KosCardData => ({
   id: k.id, slug: k.slug, name: k.name, area: k.area, price: k.price,
+  price_period: k.price_period ?? "bulan",
+  price_type: k.price_type ?? "fixed",
+  price_max: k.price_max ?? null,
   rating: Number(k.rating), reviews: k.reviews_count,
   type: k.type as "Putra" | "Putri" | "Campur",
-  image: k.image || "/placeholder.svg",
+  image: k.image || (k.photos?.[0]) || "/placeholder.svg",
   verified: k.verified, facilities: k.facilities ?? [],
+  owner_name: k.owner_name ?? "",
+  owner_whatsapp: k.owner_whatsapp ?? "",
 });
