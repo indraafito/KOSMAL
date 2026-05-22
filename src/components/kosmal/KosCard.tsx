@@ -74,11 +74,11 @@ export function KosCard({ kos }: { kos: KosCardData }) {
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-display text-base font-bold leading-snug text-foreground">{kos.name}</h3>
           <div className="flex shrink-0 items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-primary">
-            <Star className="h-3 w-3 fill-current" /> {kos.rating}
+            <Star className="h-3 w-3 fill-current" /> {kos.rating ? Number(kos.rating).toFixed(1) : "0.0"}
           </div>
         </div>
         <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3" /> {kos.area}, Malang &bull; {kos.reviews} review
+          <MapPin className="h-3 w-3" /> {kos.area}, Malang &bull; <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" /> {kos.rating ? Number(kos.rating).toFixed(1) : "0.0"} ({kos.reviews} ulasan)
         </div>
 
         <div className="mt-3 flex items-end gap-1">

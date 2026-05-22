@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, syncKosReviewStats, type ReviewWithProfile } from "@/lib/review-queries";
 import { generateReviewSummary } from "@/lib/ai-summary";
 import { StarRating } from "./StarRating";
@@ -13,6 +14,7 @@ type Props = { kosId: string; onStatsLoaded?: (stats: { count: number; avg: numb
 
 export function ReviewSection({ kosId, onStatsLoaded }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [reviews, setReviews] = useState<ReviewWithProfile[]>([]);
   const [stats, setStats] = useState({ count: 0, avg: 0 });
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
@@ -36,7 +38,11 @@ export function ReviewSection({ kosId, onStatsLoaded }: Props) {
       setStats(st);
 
       // Sync cached kos table with real review data
-      syncKosReviewStats(kosId).catch(() => {});
+      syncKosReviewStats(kosId)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["kos"] });
+        })
+        .catch(() => {});
       onStatsLoaded?.(st);
 
       if (user) {

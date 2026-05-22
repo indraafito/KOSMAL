@@ -46,7 +46,7 @@ export function Stats() {
   const stats = [
     { icon: ShieldCheck, value: statsData.verified.toLocaleString("id-ID"), label: "Kos Terverifikasi" },
     { icon: Users, value: statsData.users.toLocaleString("id-ID"), label: "Pengguna Terdaftar" },
-    { icon: Star, value: `${statsData.rating} / 5`, label: "Rata-rata Rating" },
+    { icon: Star, value: statsData.rating, label: "Rata-rata Rating" },
   ];
 
   return (
