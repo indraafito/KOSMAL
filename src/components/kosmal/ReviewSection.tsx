@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, updateReview, syncKosReviewStats, type ReviewWithProfile } from "@/lib/review-queries";
+import { detectProfanity } from "@/lib/profanity-filter";
 import { generateReviewSummary } from "@/lib/ai-summary";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,11 @@ export function ReviewSection({ kosId, onStatsLoaded }: Props) {
     if (!editingReviewId) return;
     if (editRating === 0) return toast.error("Pilih rating bintang");
     if (!editText.trim()) return toast.error("Tulis ulasan kamu");
+
+    const badWord = detectProfanity(editText);
+    if (badWord) {
+      return toast.error("Ulasan mengandung kata terlarang dan tidak bisa dikirim. Mohon gunakan bahasa yang sopan.");
+    }
 
     setUpdating(true);
     try {
@@ -107,6 +113,11 @@ export function ReviewSection({ kosId, onStatsLoaded }: Props) {
     if (!user) return;
     if (rating === 0) return toast.error("Pilih rating bintang");
     if (!text.trim()) return toast.error("Tulis ulasan kamu");
+
+    const badWord = detectProfanity(text);
+    if (badWord) {
+      return toast.error("Ulasan mengandung kata terlarang dan tidak bisa dikirim. Mohon gunakan bahasa yang sopan.");
+    }
 
     setSubmitting(true);
     try {
