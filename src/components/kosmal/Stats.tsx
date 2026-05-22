@@ -7,7 +7,7 @@ export function Stats() {
     registered: 0,
     verified: 0,
     users: 0,
-    reviews: 0,
+    rating: "0.0",
   });
 
   useEffect(() => {
@@ -17,19 +17,23 @@ export function Stats() {
           { count: registeredCount },
           { count: verifiedCount },
           { count: usersCount },
-          { count: reviewsCount }
+          reviewsResult
         ] = await Promise.all([
           supabase.from("kos").select("*", { count: "exact", head: true }).eq("status", "approved"),
           supabase.from("kos").select("*", { count: "exact", head: true }).eq("status", "approved").eq("verified", true),
           supabase.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "user"),
-          supabase.from("reviews").select("*", { count: "exact", head: true })
+          supabase.from("reviews").select("rating").eq("status", "visible")
         ]);
+
+        const ratings = (reviewsResult.data ?? []).map((r) => r.rating);
+        const count = ratings.length;
+        const avg = count > 0 ? ratings.reduce((a, b) => a + b, 0) / count : 0;
 
         setStatsData({
           registered: registeredCount || 0,
           verified: verifiedCount || 0,
           users: usersCount || 0,
-          reviews: reviewsCount || 0,
+          rating: avg > 0 ? avg.toFixed(1) : "0.0",
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -42,7 +46,7 @@ export function Stats() {
   const stats = [
     { icon: ShieldCheck, value: statsData.verified.toLocaleString("id-ID"), label: "Kos Terverifikasi" },
     { icon: Users, value: statsData.users.toLocaleString("id-ID"), label: "Pengguna Terdaftar" },
-    { icon: Star, value: statsData.reviews.toLocaleString("id-ID"), label: "Total Ulasan" },
+    { icon: Star, value: `${statsData.rating} / 5`, label: "Rata-rata Rating" },
   ];
 
   return (

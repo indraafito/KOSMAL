@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { KosRow } from "@/lib/kos-queries";
+import { syncKosReviewStats } from "./review-queries";
 
 // ========================
 // Wishlist
@@ -127,13 +128,21 @@ export async function fetchAllReviews() {
 }
 
 export async function updateReviewStatus(reviewId: string, status: Database["public"]["Enums"]["review_status"]) {
+  const { data: review } = await supabase.from("reviews").select("kos_id").eq("id", reviewId).maybeSingle();
   const { error } = await supabase.from("reviews").update({ status }).eq("id", reviewId);
   if (error) throw error;
+  if (review?.kos_id) {
+    await syncKosReviewStats(review.kos_id).catch(() => {});
+  }
 }
 
 export async function deleteReview(reviewId: string) {
+  const { data: review } = await supabase.from("reviews").select("kos_id").eq("id", reviewId).maybeSingle();
   const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
   if (error) throw error;
+  if (review?.kos_id) {
+    await syncKosReviewStats(review.kos_id).catch(() => {});
+  }
 }
 
 // ========================
