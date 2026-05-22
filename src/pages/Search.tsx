@@ -260,20 +260,21 @@ export function Search() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-2">
           <SearchIcon className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-4">Belum ada kos yang cocok dengan filter saat ini.</p>
-          {activeFilterCount > 0 && (
+          <p className="mt-2">Belum ada kos yang cocok dengan kriteria saat ini.</p>
+          {activeFilterCount > 0 ? (
             <button
               onClick={handleResetFilter}
-              className="mt-3 text-primary underline underline-offset-2"
+              className="mt-1 text-primary hover:underline font-semibold text-sm"
             >
               Hapus semua filter
             </button>
+          ) : (
+            <Link to="/" className="mt-3 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition shadow-soft">
+              Kembali ke Beranda
+            </Link>
           )}
-          <Link to="/" className="mt-4 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            Kembali ke Beranda
-          </Link>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
