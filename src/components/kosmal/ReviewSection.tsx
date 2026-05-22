@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, type ReviewWithProfile } from "@/lib/review-queries";
+import { fetchKosReviews, fetchReviewStats, hasUserReviewed, submitReview, deleteReview, type ReviewWithProfile } from "@/lib/review-queries";
 import { generateReviewSummary } from "@/lib/ai-summary";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Sparkles, User } from "lucide-react";
+import { Loader2, Sparkles, User, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type Props = { kosId: string };
@@ -181,9 +181,28 @@ export function ReviewSection({ kosId }: Props) {
                     <StarRating value={review.rating} readonly size="sm" />
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{review.text}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {new Date(review.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}
-                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(review.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                    {user && user.id === review.tenant_id && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Yakin ingin menghapus ulasan ini?")) return;
+                          try {
+                            await deleteReview(review.id, kosId);
+                            toast.success("Ulasan berhasil dihapus");
+                            await loadData(true);
+                          } catch (err: any) {
+                            toast.error(err.message || "Gagal menghapus ulasan");
+                          }
+                        }}
+                        className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-destructive transition hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3 w-3" /> Hapus
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

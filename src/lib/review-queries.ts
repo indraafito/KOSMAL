@@ -78,3 +78,15 @@ export async function submitReview(kosId: string, userId: string, rating: number
     rating: stats.avg,
   }).eq("id", kosId);
 }
+
+export async function deleteReview(reviewId: string, kosId: string) {
+  const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+  if (error) throw error;
+
+  // Recalculate kos reviews_count and rating
+  const stats = await fetchReviewStats(kosId);
+  await supabase.from("kos").update({
+    reviews_count: stats.count,
+    rating: stats.count > 0 ? stats.avg : 0,
+  }).eq("id", kosId);
+}
