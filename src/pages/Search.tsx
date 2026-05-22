@@ -3,10 +3,15 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchKosList, kosRowToCard } from "@/lib/kos-queries";
 import { KosCard } from "@/components/kosmal/KosCard";
-import { FilterHarga } from "@/components/FilterHarga";
 import { toMonthlyPrice, type PricePeriod } from "@/lib/price-utils";
 import { Search as SearchIcon, MapPin, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Daftar kecamatan Malang — sesuaikan dengan data kamu
 const KECAMATAN = [
@@ -19,12 +24,19 @@ export function Search() {
   const area = searchParams.get("area") ?? undefined;
   const sort = searchParams.get("sort") as "recommended" | "price-asc" | "price-desc" | "rating" | null;
 
-  // State filter
-  const [showFilter, setShowFilter] = useState(false);
+  // Active Filter states
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>("");
-  const [minPerBulan, setMinPerBulan] = useState<number>(0);
-  const [maxPerBulan, setMaxPerBulan] = useState<number>(Infinity);
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
+  const [pricePeriod, setPricePeriod] = useState<PricePeriod>("bulan");
   const [isFiltered, setIsFiltered] = useState(false);
+
+  // Dialog temp states
+  const [openFilterDialog, setOpenFilterDialog] = useState(false);
+  const [tempKecamatan, setTempKecamatan] = useState<string>("");
+  const [tempMin, setTempMin] = useState<string>("");
+  const [tempMax, setTempMax] = useState<string>("");
+  const [tempPeriod, setTempPeriod] = useState<PricePeriod>("bulan");
 
   const { data, isLoading } = useQuery({
     queryKey: ["kos", "search", q, area, sort],
@@ -40,6 +52,11 @@ export function Search() {
 
       // Filter harga — normalisasi ke /bulan
       if (isFiltered) {
+        const minVal = Number(minPrice) || 0;
+        const maxVal = Number(maxPrice) || Infinity;
+        const minPerBulan = toMonthlyPrice(minVal, pricePeriod);
+        const maxPerBulan = toMonthlyPrice(maxVal, pricePeriod);
+
         const hargaBulan = toMonthlyPrice(kos.price, (kos.price_period as PricePeriod) ?? "bulan");
         if (hargaBulan < minPerBulan) return false;
         if (hargaBulan > maxPerBulan) return false;
@@ -47,21 +64,39 @@ export function Search() {
 
       return true;
     });
-  }, [data, selectedKecamatan, minPerBulan, maxPerBulan, isFiltered]);
+  }, [data, selectedKecamatan, minPrice, maxPrice, pricePeriod, isFiltered]);
 
   const heading = area ? `Kos di ${area}` : "Semua Kos";
 
-  const handleFilter = (min: number, max: number) => {
-    setMinPerBulan(min);
-    setMaxPerBulan(max);
-    setIsFiltered(true);
+  const handleOpenFilter = () => {
+    setTempKecamatan(selectedKecamatan);
+    setTempMin(minPrice);
+    setTempMax(maxPrice);
+    setTempPeriod(pricePeriod);
+    setOpenFilterDialog(true);
+  };
+
+  const handleApplyFilter = () => {
+    setSelectedKecamatan(tempKecamatan);
+    setMinPrice(tempMin);
+    setMaxPrice(tempMax);
+    setPricePeriod(tempPeriod);
+    setIsFiltered(!!tempMin || !!tempMax || !!tempKecamatan);
+    setOpenFilterDialog(false);
   };
 
   const handleResetFilter = () => {
-    setMinPerBulan(0);
-    setMaxPerBulan(Infinity);
     setSelectedKecamatan("");
+    setMinPrice("");
+    setMaxPrice("");
+    setPricePeriod("bulan");
     setIsFiltered(false);
+
+    setTempKecamatan("");
+    setTempMin("");
+    setTempMax("");
+    setTempPeriod("bulan");
+    setOpenFilterDialog(false);
   };
 
   const activeFilterCount = [
@@ -91,7 +126,7 @@ export function Search() {
           <Button
             variant="outline"
             className="flex items-center gap-2 rounded-full"
-            onClick={() => setShowFilter((v) => !v)}
+            onClick={handleOpenFilter}
           >
             <SlidersHorizontal className="h-4 w-4" />
             Filter
@@ -118,43 +153,107 @@ export function Search() {
         </div>
       </div>
 
-      {/* Panel filter */}
-      {showFilter && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
-          {/* Filter kecamatan */}
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <p className="mb-3 text-sm font-semibold text-foreground">Area / Kecamatan</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedKecamatan("")}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  selectedKecamatan === ""
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-foreground hover:bg-muted"
-                }`}
-              >
-                Semua
-              </button>
-              {KECAMATAN.map((k) => (
+      {/* Pop up filter */}
+      <Dialog open={openFilterDialog} onOpenChange={setOpenFilterDialog}>
+        <DialogContent className="sm:max-w-[440px] rounded-3xl p-6">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold text-foreground">Filter Pencarian</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Filter kecamatan */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-3">Area / Kecamatan</p>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={k}
-                  onClick={() => setSelectedKecamatan(k)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                    selectedKecamatan === k
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-foreground hover:bg-muted"
+                  type="button"
+                  onClick={() => setTempKecamatan("")}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                    tempKecamatan === ""
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  {k}
+                  Semua
                 </button>
-              ))}
+                {KECAMATAN.map((k) => (
+                  <button
+                    type="button"
+                    key={k}
+                    onClick={() => setTempKecamatan(k)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                      tempKecamatan === k
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <hr className="border-border/60" />
+
+            {/* Filter harga */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-3">Harga Sewa</p>
+              <div className="mb-3">
+                <select
+                  value={tempPeriod}
+                  onChange={(e) => setTempPeriod(e.target.value as PricePeriod)}
+                  className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="bulan">per Bulan</option>
+                  <option value="semester">per Semester</option>
+                  <option value="tahun">per Tahun</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <span className="text-xs text-muted-foreground">Min (Rp)</span>
+                  <input
+                    type="number"
+                    value={tempMin}
+                    onChange={(e) => setTempMin(e.target.value)}
+                    className="mt-1 flex h-10 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex-1">
+                  <span className="text-xs text-muted-foreground">Max (Rp)</span>
+                  <input
+                    type="number"
+                    value={tempMax}
+                    onChange={(e) => setTempMax(e.target.value)}
+                    className="mt-1 flex h-10 w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                    placeholder="Semua"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Filter harga */}
-          <FilterHarga onFilter={handleFilter} onReset={handleResetFilter} />
-        </div>
-      )}
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleResetFilter}
+              className="flex-1 rounded-full py-5 text-sm font-semibold border-primary/20 text-primary hover:bg-brand-soft/20"
+            >
+              Reset
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApplyFilter}
+              className="flex-1 rounded-full py-5 text-sm font-semibold bg-gradient-cta text-white"
+            >
+              Terapkan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Hasil */}
       {isLoading ? (
