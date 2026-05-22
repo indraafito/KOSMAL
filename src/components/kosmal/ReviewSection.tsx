@@ -25,8 +25,8 @@ export function ReviewSection({ kosId }: Props) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [revs, st] = await Promise.all([
         fetchKosReviews(kosId),
@@ -43,9 +43,14 @@ export function ReviewSection({ kosId }: Props) {
       // Load AI summary
       if (st.count >= 3) {
         setLoadingSummary(true);
-        const summary = await generateReviewSummary(kosId);
-        setAiSummary(summary);
-        setLoadingSummary(false);
+        try {
+          const summary = await generateReviewSummary(kosId);
+          setAiSummary(summary);
+        } catch {
+          console.error("Failed to generate AI summary");
+        } finally {
+          setLoadingSummary(false);
+        }
       }
     } catch (err) {
       console.error("Failed to load reviews:", err);
@@ -69,7 +74,7 @@ export function ReviewSection({ kosId }: Props) {
       toast.success("Review berhasil dikirim!");
       setRating(0);
       setText("");
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim review");
     } finally {
